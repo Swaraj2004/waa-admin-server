@@ -55,11 +55,22 @@ const Posting = () => {
   );
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const maxSize = 10 * 1024 * 1024;
+
     if (e.target.files) {
-      const newFiles = Array.from(e.target.files).map((f) => ({
-        file: f,
-        caption: "",
-      }));
+      const newFiles = Array.from(e.target.files)
+        .filter((f) => {
+          if (f.size > maxSize) {
+            alert(`File "${f.name}" exceeds the 10MB limit and was skipped.`);
+            return false;
+          }
+          return true;
+        })
+        .map((f) => ({
+          file: f,
+          caption: "",
+        }));
+
       setFiles((prev) => [...prev, ...newFiles]);
     }
   };
