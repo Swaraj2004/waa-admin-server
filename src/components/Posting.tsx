@@ -234,13 +234,13 @@ const Posting = () => {
               flexDirection: "column",
               gap: "15px",
               border: "1px solid #ccc",
-              borderRadius: "6px",
+              borderRadius: "8px",
             }}
           >
             <div
               style={{
                 backgroundColor: "#f9f9f9",
-                padding: "15px",
+                padding: "1.5rem",
                 borderRadius: "8px",
               }}
             >
@@ -255,7 +255,7 @@ const Posting = () => {
                   width: "100%",
                   height: "200px",
                   padding: "10px",
-                  borderRadius: "4px",
+                  borderRadius: "6px",
                   border: "1px solid #ccc",
                   resize: "vertical",
                   marginTop: "8px",
@@ -379,35 +379,51 @@ const Posting = () => {
           <div
             style={{
               backgroundColor: "#f9f9f9",
-              padding: "15px",
+              padding: "1.5rem",
               border: "1px solid #ccc",
-              borderRadius: "6px",
+              borderRadius: "8px",
             }}
           >
             <div style={{ marginBottom: "15px" }}>
               <strong>Available Devices:</strong>
             </div>
-            <label>
-              <input
-                type="checkbox"
-                checked={
-                  selectedDevices.length ===
-                  Object.entries(devices).filter(([_, dev]) => dev.online)
-                    .length
-                }
-                onChange={(e) => {
-                  const selectableDevices = Object.entries(devices)
-                    .filter(
-                      ([_, dev]) =>
-                        dev.online && !dev.contactPosting && !dev.groupPosting
-                    )
-                    .map(([name]) => name);
-
-                  setSelectedDevices(e.target.checked ? selectableDevices : []);
+            {Object.entries(devices).filter(([_, dev]) => dev.online).length ===
+            0 ? (
+              <p
+                style={{
+                  color: "#888",
+                  textAlign: "center",
+                  paddingTop: "1rem",
+                  margin: "0",
                 }}
-              />{" "}
-              <strong>Select All</strong>
-            </label>
+              >
+                No devices available.
+              </p>
+            ) : (
+              <label>
+                <input
+                  type="checkbox"
+                  checked={
+                    selectedDevices.length ===
+                    Object.entries(devices).filter(([_, dev]) => dev.online)
+                      .length
+                  }
+                  onChange={(e) => {
+                    const selectableDevices = Object.entries(devices)
+                      .filter(
+                        ([_, dev]) =>
+                          dev.online && !dev.contactPosting && !dev.groupPosting
+                      )
+                      .map(([name]) => name);
+
+                    setSelectedDevices(
+                      e.target.checked ? selectableDevices : []
+                    );
+                  }}
+                />{" "}
+                <strong>Select All</strong>
+              </label>
+            )}
             <div
               style={{
                 marginTop: "10px",
@@ -440,9 +456,9 @@ const Posting = () => {
           <div
             style={{
               backgroundColor: "#f9f9f9",
-              padding: "15px",
+              padding: "1.5rem",
               border: "1px solid #ccc",
-              borderRadius: "6px",
+              borderRadius: "8px",
             }}
           >
             <strong>Available Tags:</strong>
@@ -515,7 +531,7 @@ const Posting = () => {
               marginTop: "10px",
               marginBottom: "15px",
               padding: "8px",
-              borderRadius: "4px",
+              borderRadius: "6px",
               border: "1px solid #ccc",
               outlineColor: "#aaa",
               fontFamily: "inherit",

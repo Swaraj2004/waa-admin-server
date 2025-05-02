@@ -43,7 +43,7 @@ export function DeviceStatus() {
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "1fr 1fr",
+        gridTemplateColumns: "1fr 1fr 1fr",
         height: "calc(100vh - 128px)",
         gap: "1rem",
         boxSizing: "border-box",
@@ -52,8 +52,9 @@ export function DeviceStatus() {
       {/* Devices List */}
       <div
         style={{
+          gridColumn: "span 2",
           overflowY: "auto",
-          border: "1px solid #ddd",
+          border: "1px solid #ccc",
           borderRadius: "8px",
           padding: "2rem",
           background: "#f9f9f9",
@@ -130,7 +131,7 @@ export function DeviceStatus() {
       <div
         style={{
           overflowY: "auto",
-          border: "1px solid #ddd",
+          border: "1px solid #ccc",
           borderRadius: "8px",
           padding: "2rem",
           background: "#fff",
