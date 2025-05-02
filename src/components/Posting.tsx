@@ -39,6 +39,9 @@ const Posting = () => {
   }, []);
 
   const handleDeviceToggle = (name: string) => {
+    const dev = devices[name];
+    if (!dev || dev.contactsPosting || dev.groupsPosting) return;
+
     setSelectedDevices((prev) =>
       prev.includes(name) ? prev.filter((d) => d !== name) : [...prev, name]
     );
@@ -124,14 +127,6 @@ const Posting = () => {
         )
       );
 
-      console.log({
-        message: message || "",
-        files: base64Files,
-        selectedTags: selectedTags || [],
-        selectedDevices: selectedDevices || [],
-        postingType,
-      });
-
       const response = await fetch("/api/start-posting", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -154,7 +149,12 @@ const Posting = () => {
       console.error(err);
       alert("An error occurred while starting posting.");
     } finally {
+      setSelectedDevices([]);
+      setSelectedTags([]);
       setLoading(false);
+      fetch("/api/devices")
+        .then((res) => res.json())
+        .then((data) => setDevices(data));
     }
   };
 
@@ -396,13 +396,14 @@ const Posting = () => {
                     .length
                 }
                 onChange={(e) => {
-                  setSelectedDevices(
-                    e.target.checked
-                      ? Object.entries(devices)
-                          .filter(([_, dev]) => dev.online)
-                          .map(([name]) => name)
-                      : []
-                  );
+                  const selectableDevices = Object.entries(devices)
+                    .filter(
+                      ([_, dev]) =>
+                        dev.online && !dev.contactPosting && !dev.groupPosting
+                    )
+                    .map(([name]) => name);
+
+                  setSelectedDevices(e.target.checked ? selectableDevices : []);
                 }}
               />{" "}
               <strong>Select All</strong>
@@ -416,18 +417,22 @@ const Posting = () => {
             >
               {Object.entries(devices)
                 .filter(([_, dev]) => dev.online)
-                .map(([name]) => (
-                  <div key={name} style={{ marginTop: "5px" }}>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={selectedDevices.includes(name)}
-                        onChange={() => handleDeviceToggle(name)}
-                      />{" "}
-                      {name}
-                    </label>
-                  </div>
-                ))}
+                .map(([name, dev]) => {
+                  const isPosting = dev.contactPosting || dev.groupPosting;
+                  return (
+                    <div key={name} style={{ marginTop: "5px" }}>
+                      <label style={{ color: isPosting ? "gray" : "black" }}>
+                        <input
+                          type="checkbox"
+                          checked={selectedDevices.includes(name)}
+                          onChange={() => handleDeviceToggle(name)}
+                          disabled={isPosting}
+                        />{" "}
+                        {name} {isPosting && <span>(posting)</span>}
+                      </label>
+                    </div>
+                  );
+                })}
             </div>
           </div>
 
