@@ -57,7 +57,6 @@ export function DeviceStatus() {
           border: "1px solid #ccc",
           borderRadius: "8px",
           padding: "2rem",
-          background: "#f9f9f9",
         }}
       >
         <h2
@@ -134,7 +133,6 @@ export function DeviceStatus() {
           border: "1px solid #ccc",
           borderRadius: "8px",
           padding: "2rem",
-          background: "#fff",
           display: "flex",
           flexDirection: "column",
         }}

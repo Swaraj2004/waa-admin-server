@@ -12,7 +12,6 @@ export const Layout: FC = (props) => {
       <body
         style={{
           fontFamily: "sans-serif",
-          background: "#f8f9fa",
           margin: "0",
           padding: "2rem",
         }}
@@ -23,7 +22,6 @@ export const Layout: FC = (props) => {
             justifyContent: "space-between",
             alignItems: "center",
             paddingBottom: "1rem",
-            background: "#fff",
           }}
         >
           <h1 style={{ margin: "0" }}>📋 WAA Control Panel</h1>

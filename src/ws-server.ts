@@ -58,7 +58,7 @@ export function sendToSelectedDevices(data: {
 
   for (const name of data.selectedDevices) {
     const client = clients.get(name);
-    if (client?.ws.readyState === client.ws.OPEN) {
+    if (client && client.ws.readyState === client.ws.OPEN) {
       client.ws.send(payload);
       sent++;
     }

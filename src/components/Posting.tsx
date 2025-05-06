@@ -40,7 +40,7 @@ const Posting = () => {
 
   const handleDeviceToggle = (name: string) => {
     const dev = devices[name];
-    if (!dev || dev.contactsPosting || dev.groupsPosting) return;
+    if (!dev || dev.contactPosting || dev.groupPosting) return;
 
     setSelectedDevices((prev) =>
       prev.includes(name) ? prev.filter((d) => d !== name) : [...prev, name]
@@ -57,11 +57,12 @@ const Posting = () => {
     )
   );
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: Event) => {
+    const input = e.target as HTMLInputElement;
     const maxSize = 10 * 1024 * 1024;
 
-    if (e.target.files) {
-      const newFiles = Array.from(e.target.files)
+    if (input.files) {
+      const newFiles = Array.from(input.files)
         .filter((f) => {
           if (f.size > maxSize) {
             alert(`File "${f.name}" exceeds the 10MB limit and was skipped.`);
@@ -74,7 +75,10 @@ const Posting = () => {
           caption: "",
         }));
 
-      setFiles((prev) => [...prev, ...newFiles]);
+      setFiles((prev: { file: File; caption: string }[]) => [
+        ...prev,
+        ...newFiles,
+      ]);
     }
   };
 
@@ -250,7 +254,11 @@ const Posting = () => {
               <textarea
                 placeholder="Enter your message here..."
                 value={message}
-                onChange={(e) => setMessage(e.target.value)}
+                onChange={(e) => {
+                  if (e.target) {
+                    setMessage((e.target as HTMLTextAreaElement).value);
+                  }
+                }}
                 style={{
                   width: "100%",
                   height: "200px",
@@ -261,6 +269,7 @@ const Posting = () => {
                   marginTop: "8px",
                   outlineColor: "#aaa",
                   fontFamily: "inherit",
+                  backgroundColor: "inherit",
                 }}
               />
               <div
@@ -417,7 +426,9 @@ const Posting = () => {
                       .map(([name]) => name);
 
                     setSelectedDevices(
-                      e.target.checked ? selectableDevices : []
+                      (e.target as HTMLInputElement).checked
+                        ? selectableDevices
+                        : []
                     );
                   }}
                 />{" "}
@@ -524,7 +535,11 @@ const Posting = () => {
           <br />
           <textarea
             value={tempCaption}
-            onChange={(e) => setTempCaption(e.target.value)}
+            onChange={(e) => {
+              if (e.target) {
+                setTempCaption((e.target as HTMLTextAreaElement).value);
+              }
+            }}
             style={{
               width: "100%",
               height: "120px",
@@ -535,6 +550,7 @@ const Posting = () => {
               border: "1px solid #ccc",
               outlineColor: "#aaa",
               fontFamily: "inherit",
+              backgroundColor: "inherit",
             }}
           />
           <div
