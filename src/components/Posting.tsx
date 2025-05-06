@@ -239,11 +239,11 @@ const Posting = () => {
               gap: "15px",
               border: "1px solid #ccc",
               borderRadius: "8px",
+              backgroundColor: "#f9f9f9",
             }}
           >
             <div
               style={{
-                backgroundColor: "#f9f9f9",
                 padding: "1.5rem",
                 borderRadius: "8px",
               }}

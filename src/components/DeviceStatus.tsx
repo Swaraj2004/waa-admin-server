@@ -57,6 +57,7 @@ export function DeviceStatus() {
           border: "1px solid #ccc",
           borderRadius: "8px",
           padding: "2rem",
+          backgroundColor: "#f9f9f9",
         }}
       >
         <h2
@@ -135,6 +136,7 @@ export function DeviceStatus() {
           padding: "2rem",
           display: "flex",
           flexDirection: "column",
+          backgroundColor: "#f9f9f9",
         }}
       >
         <h2
@@ -145,7 +147,16 @@ export function DeviceStatus() {
           Notifications
         </h2>
         {notifications.length === 0 ? (
-          <p>No disconnections yet.</p>
+          <p
+            style={{
+              color: "#888",
+              textAlign: "center",
+              paddingTop: "1rem",
+              margin: "0",
+            }}
+          >
+            No disconnections yet.
+          </p>
         ) : (
           notifications.map((note, idx) => (
             <div
