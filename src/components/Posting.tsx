@@ -59,13 +59,13 @@ const Posting = () => {
 
   const handleFileChange = (e: Event) => {
     const input = e.target as HTMLInputElement;
-    const maxSize = 10 * 1024 * 1024;
+    const maxSize = 30 * 1024 * 1024;
 
     if (input.files) {
       const newFiles = Array.from(input.files)
         .filter((f) => {
           if (f.size > maxSize) {
-            alert(`File "${f.name}" exceeds the 10MB limit and was skipped.`);
+            alert(`File "${f.name}" exceeds the 30MB limit and was skipped.`);
             return false;
           }
           return true;
