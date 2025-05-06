@@ -1,0 +1,9 @@
+@echo off
+echo Running npm install...
+call npm install
+
+echo Running npm run build...
+call npm run build
+
+echo Starting the application...
+call npm start
