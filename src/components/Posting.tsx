@@ -18,6 +18,7 @@ const Posting = () => {
   const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [message, setMessage] = useState("");
+  const [sendAsContact, setSendAsContact] = useState(false);
   const [files, setFiles] = useState<{ file: File; caption: string }[]>([]);
   const [captionDialogIndex, setCaptionDialogIndex] = useState<number | null>(
     null
@@ -136,6 +137,7 @@ const Posting = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: message || "",
+          sendAsContact,
           files: base64Files,
           selectedTags: selectedTags || [],
           selectedDevices: selectedDevices || [],
@@ -248,9 +250,39 @@ const Posting = () => {
                 borderRadius: "8px",
               }}
             >
-              <label>
-                <strong>Message:</strong>
-              </label>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <label>
+                  <strong>Message:</strong>
+                </label>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    fontSize: "14px",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    id="sendAsContact"
+                    checked={sendAsContact}
+                    onClick={(e) => {
+                      const target = e.target as HTMLInputElement | null;
+                      if (target) {
+                        setSendAsContact(target.checked);
+                      }
+                    }}
+                    style={{ zoom: "1.2" }}
+                  />
+                  <label htmlFor="sendAsContact">Send as Contacts</label>
+                </div>
+              </div>
               <textarea
                 placeholder="Enter your message here..."
                 value={message}

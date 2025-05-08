@@ -36,11 +36,19 @@ app.get("/api/devices", (c) => {
 
 app.post("/api/start-posting", async (c) => {
   const body = await c.req.json();
-  const { message, files, selectedTags, selectedDevices, postingType } = body;
+  const {
+    message,
+    sendAsContact,
+    files,
+    selectedTags,
+    selectedDevices,
+    postingType,
+  } = body;
 
   const sent = sendToSelectedDevices({
     type: "file-transfer",
     message,
+    sendAsContact,
     files,
     selectedTags,
     postingType,
