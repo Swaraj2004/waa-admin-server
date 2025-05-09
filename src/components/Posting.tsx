@@ -1,4 +1,6 @@
+import type { PropsWithChildren } from "hono/jsx";
 import { useEffect, useState } from "hono/jsx";
+import { useResponsive } from "../hooks/useResponsive";
 
 type Device = {
   contactTags: string[];
@@ -11,6 +13,7 @@ type Device = {
 type DevicesMap = Record<string, Device>;
 
 const Posting = () => {
+  const { isMobile, isDesktop } = useResponsive();
   const [postingType, setPostingType] = useState<"contacts" | "groups">(
     "contacts"
   );
@@ -164,16 +167,45 @@ const Posting = () => {
     }
   };
 
+  // Card component for consistent styling
+  const Card = ({ children, title }: PropsWithChildren<{ title?: string }>) => (
+    <div
+      style={{
+        backgroundColor: "#f9f9f9",
+        padding: isDesktop ? "1.5rem" : "1rem",
+        border: "1px solid #ccc",
+        borderRadius: "8px",
+        height: isDesktop ? "92%" : "200px",
+        marginBottom: isDesktop ? "0" : "1rem",
+      }}
+    >
+      {title && (
+        <div style={{ marginBottom: "15px" }}>
+          <strong>{title}</strong>
+        </div>
+      )}
+      {children}
+    </div>
+  );
+
   return (
     <>
-      <div style={{ fontFamily: "Arial, sans-serif" }}>
+      <div
+        style={{
+          fontFamily: "Arial, sans-serif",
+          maxWidth: "100%",
+        }}
+      >
         {/* Posting type + start button */}
         <div
           style={{
             display: "flex",
+            flexDirection: isMobile ? "column" : "row",
             justifyContent: "space-between",
+            marginTop: isMobile ? "10px" : "0",
             marginBottom: "20px",
-            alignItems: "center",
+            alignItems: isMobile ? "flex-start" : "center",
+            gap: isMobile ? "10px" : "0",
           }}
         >
           <div style={{ display: "inline-flex" }}>
@@ -217,37 +249,437 @@ const Posting = () => {
               border: "none",
               borderRadius: "4px",
               cursor: loading ? "not-allowed" : "pointer",
+              width: isMobile ? "100%" : "auto",
             }}
           >
             {loading ? "Posting..." : "Start Posting"}
           </button>
         </div>
 
-        {/* 4-column grid layout */}
+        {/* Responsive layout */}
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr 1fr 1fr",
-            gap: "20px",
-            height: "calc(100vh - 180px)",
+            display: "flex",
+            flexDirection: "column",
           }}
         >
-          {/* Message + Files */}
-          <div
-            style={{
-              gridColumn: "span 2",
-              display: "flex",
-              flexDirection: "column",
-              gap: "15px",
-              border: "1px solid #ccc",
-              borderRadius: "8px",
-              backgroundColor: "#f9f9f9",
-            }}
-          >
+          {/* Mobile/Tablet: Show devices and tags first */}
+          {!isDesktop && (
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              {/* Devices */}
+              <Card title="Available Devices:">
+                {Object.entries(devices).filter(([_, dev]) => dev.online)
+                  .length === 0 ? (
+                  <p
+                    style={{
+                      color: "#888",
+                      textAlign: "center",
+                      paddingTop: "0.5rem",
+                      margin: "0",
+                    }}
+                  >
+                    No devices available.
+                  </p>
+                ) : (
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={
+                        selectedDevices.length ===
+                        Object.entries(devices).filter(([_, dev]) => dev.online)
+                          .length
+                      }
+                      onChange={(e) => {
+                        const selectableDevices = Object.entries(devices)
+                          .filter(
+                            ([_, dev]) =>
+                              dev.online &&
+                              !dev.contactPosting &&
+                              !dev.groupPosting
+                          )
+                          .map(([name]) => name);
+
+                        setSelectedDevices(
+                          (e.target as HTMLInputElement).checked
+                            ? selectableDevices
+                            : []
+                        );
+                      }}
+                    />{" "}
+                    <strong>Select All</strong>
+                  </label>
+                )}
+                <div
+                  style={{
+                    marginTop: "10px",
+                    maxHeight: "150px",
+                    overflowY: "auto",
+                  }}
+                >
+                  {Object.entries(devices)
+                    .filter(([_, dev]) => dev.online)
+                    .map(([name, dev]) => {
+                      const isPosting = dev.contactPosting || dev.groupPosting;
+                      return (
+                        <div key={name} style={{ marginTop: "5px" }}>
+                          <label
+                            style={{ color: isPosting ? "gray" : "black" }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedDevices.includes(name)}
+                              onChange={() => handleDeviceToggle(name)}
+                              disabled={isPosting}
+                            />{" "}
+                            {name} {isPosting && <span>(posting)</span>}
+                          </label>
+                        </div>
+                      );
+                    })}
+                </div>
+              </Card>
+
+              {/* Tags */}
+              <Card title="Available Tags:">
+                <div
+                  style={{
+                    maxHeight: "150px",
+                    overflowY: "auto",
+                  }}
+                >
+                  {uniqueTags.length === 0 && (
+                    <p style={{ color: "#888", textAlign: "center" }}>
+                      No tags available.
+                    </p>
+                  )}
+                  {uniqueTags.map((tag) => (
+                    <div key={tag} style={{ marginBottom: "5px" }}>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={selectedTags.includes(tag)}
+                          onChange={() =>
+                            setSelectedTags((prev) =>
+                              prev.includes(tag)
+                                ? prev.filter((t) => t !== tag)
+                                : [...prev, tag]
+                            )
+                          }
+                        />{" "}
+                        {tag}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </div>
+          )}
+
+          {/* Desktop layout */}
+          {isDesktop && (
             <div
               style={{
-                padding: "1.5rem",
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr 1fr 1fr",
+                gap: "20px",
+                height: "calc(100vh - 180px)",
+              }}
+            >
+              {/* Message + Files - takes 2 columns */}
+              <div style={{ gridColumn: "span 2" }}>
+                <div
+                  style={{
+                    backgroundColor: "#f9f9f9",
+                    padding: "1.5rem",
+                    border: "1px solid #ccc",
+                    borderRadius: "8px",
+                    height: "92%",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <label>
+                      <strong>Message:</strong>
+                    </label>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        fontSize: "14px",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        id="sendAsContact"
+                        checked={sendAsContact}
+                        onClick={(e) => {
+                          const target = e.target as HTMLInputElement | null;
+                          if (target) {
+                            setSendAsContact(target.checked);
+                          }
+                        }}
+                        style={{ zoom: "1.2" }}
+                      />
+                      <label htmlFor="sendAsContact">Send as Contacts</label>
+                    </div>
+                  </div>
+                  <textarea
+                    placeholder="Enter your message here..."
+                    value={message}
+                    onChange={(e) => {
+                      if (e.target) {
+                        setMessage((e.target as HTMLTextAreaElement).value);
+                      }
+                    }}
+                    style={{
+                      width: "100%",
+                      height: "200px",
+                      padding: "10px",
+                      borderRadius: "6px",
+                      border: "1px solid #ccc",
+                      resize: "vertical",
+                      marginTop: "8px",
+                      outlineColor: "#aaa",
+                      fontFamily: "inherit",
+                      backgroundColor: "inherit",
+                    }}
+                  />
+                  <div
+                    style={{
+                      marginTop: "15px",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <label>
+                      <strong>Files:</strong>
+                    </label>
+                    <div>
+                      <label
+                        style={{
+                          padding: "6px 10px",
+                          backgroundColor: "#007bff",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: "4px",
+                          cursor: "pointer",
+                          fontSize: "13.5px",
+                        }}
+                      >
+                        <input
+                          type="file"
+                          multiple
+                          onChange={handleFileChange}
+                          style={{
+                            display: "none",
+                          }}
+                        />
+                        Add Files
+                      </label>
+                      <button
+                        onClick={() => setFiles([])}
+                        style={{
+                          marginLeft: "10px",
+                          padding: "6px 10px",
+                          backgroundColor: "red",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: "4px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Clear Files
+                      </button>
+                    </div>
+                  </div>
+                  {files.length > 0 && (
+                    <div
+                      style={{
+                        padding: "12px 0",
+                        maxHeight: "300px",
+                        overflowY: "auto",
+                      }}
+                    >
+                      {files.map((f, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            marginBottom: "10px",
+                            backgroundColor: "#fff",
+                            padding: "10px",
+                            borderRadius: "6px",
+                            boxShadow: "0 0 4px rgba(0,0,0,0.1)",
+                          }}
+                        >
+                          <span style={{ flex: "1", fontWeight: "bold" }}>
+                            {f.file.name}
+                          </span>
+                          <button
+                            onClick={() => openCaptionDialog(idx)}
+                            style={{
+                              marginLeft: "10px",
+                              padding: "6px 10px",
+                              backgroundColor: "#007bff",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                            }}
+                          >
+                            {f.caption ? "Edit Caption" : "Add Caption"}
+                          </button>
+                          <button
+                            onClick={() => {
+                              const updated = [...files];
+                              updated.splice(idx, 1);
+                              setFiles(updated);
+                            }}
+                            style={{
+                              marginLeft: "10px",
+                              padding: "6px 10px",
+                              backgroundColor: "red",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                            }}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Devices */}
+              <Card title="Available Devices:">
+                {Object.entries(devices).filter(([_, dev]) => dev.online)
+                  .length === 0 ? (
+                  <p
+                    style={{
+                      color: "#888",
+                      textAlign: "center",
+                      paddingTop: "1rem",
+                      margin: "0",
+                    }}
+                  >
+                    No devices available.
+                  </p>
+                ) : (
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={
+                        selectedDevices.length ===
+                        Object.entries(devices).filter(([_, dev]) => dev.online)
+                          .length
+                      }
+                      onChange={(e) => {
+                        const selectableDevices = Object.entries(devices)
+                          .filter(
+                            ([_, dev]) =>
+                              dev.online &&
+                              !dev.contactPosting &&
+                              !dev.groupPosting
+                          )
+                          .map(([name]) => name);
+
+                        setSelectedDevices(
+                          (e.target as HTMLInputElement).checked
+                            ? selectableDevices
+                            : []
+                        );
+                      }}
+                    />{" "}
+                    <strong>Select All</strong>
+                  </label>
+                )}
+                <div
+                  style={{
+                    marginTop: "10px",
+                    maxHeight: "300px",
+                    overflowY: "auto",
+                  }}
+                >
+                  {Object.entries(devices)
+                    .filter(([_, dev]) => dev.online)
+                    .map(([name, dev]) => {
+                      const isPosting = dev.contactPosting || dev.groupPosting;
+                      return (
+                        <div key={name} style={{ marginTop: "5px" }}>
+                          <label
+                            style={{ color: isPosting ? "gray" : "black" }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedDevices.includes(name)}
+                              onChange={() => handleDeviceToggle(name)}
+                              disabled={isPosting}
+                            />{" "}
+                            {name} {isPosting && <span>(posting)</span>}
+                          </label>
+                        </div>
+                      );
+                    })}
+                </div>
+              </Card>
+
+              {/* Tags */}
+              <Card title="Available Tags:">
+                <div
+                  style={{
+                    maxHeight: "300px",
+                    overflowY: "auto",
+                  }}
+                >
+                  {uniqueTags.length === 0 && (
+                    <p style={{ color: "#888", textAlign: "center" }}>
+                      No tags available.
+                    </p>
+                  )}
+                  {uniqueTags.map((tag) => (
+                    <div key={tag} style={{ marginBottom: "5px" }}>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={selectedTags.includes(tag)}
+                          onChange={() =>
+                            setSelectedTags((prev) =>
+                              prev.includes(tag)
+                                ? prev.filter((t) => t !== tag)
+                                : [...prev, tag]
+                            )
+                          }
+                        />{" "}
+                        {tag}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </div>
+          )}
+
+          {/* Mobile/Tablet: Message section below devices and tags */}
+          {!isDesktop && (
+            <div
+              style={{
+                backgroundColor: "#f9f9f9",
+                padding: "1rem",
+                border: "1px solid #ccc",
                 borderRadius: "8px",
+                height: "fit-content",
               }}
             >
               <div
@@ -255,6 +687,8 @@ const Posting = () => {
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: "10px",
                 }}
               >
                 <label>
@@ -293,7 +727,7 @@ const Posting = () => {
                 }}
                 style={{
                   width: "100%",
-                  height: "200px",
+                  height: "150px",
                   padding: "10px",
                   borderRadius: "6px",
                   border: "1px solid #ccc",
@@ -310,12 +744,14 @@ const Posting = () => {
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: "10px",
                 }}
               >
                 <label>
                   <strong>Files:</strong>
                 </label>
-                <div>
+                <div style={{ display: "flex", gap: "10px" }}>
                   <label
                     style={{
                       padding: "6px 10px",
@@ -340,7 +776,6 @@ const Posting = () => {
                   <button
                     onClick={() => setFiles([])}
                     style={{
-                      marginLeft: "10px",
                       padding: "6px 10px",
                       backgroundColor: "red",
                       color: "#fff",
@@ -357,7 +792,7 @@ const Posting = () => {
                 <div
                   style={{
                     padding: "12px 0",
-                    maxHeight: "300px",
+                    maxHeight: "200px",
                     overflowY: "auto",
                   }}
                 >
@@ -365,7 +800,7 @@ const Posting = () => {
                     <div
                       key={idx}
                       style={{
-                        display: "flex",
+                        display: isMobile ? "block" : "flex",
                         alignItems: "center",
                         marginBottom: "10px",
                         backgroundColor: "#fff",
@@ -374,169 +809,59 @@ const Posting = () => {
                         boxShadow: "0 0 4px rgba(0,0,0,0.1)",
                       }}
                     >
-                      <span style={{ flex: "1", fontWeight: "bold" }}>
+                      <span
+                        style={{
+                          flex: "1",
+                          fontWeight: "bold",
+                          marginBottom: isMobile ? "8px" : "0",
+                          display: "block",
+                        }}
+                      >
                         {f.file.name}
                       </span>
-                      <button
-                        onClick={() => openCaptionDialog(idx)}
+                      <div
                         style={{
-                          marginLeft: "10px",
-                          padding: "6px 10px",
-                          backgroundColor: "#007bff",
-                          color: "#fff",
-                          border: "none",
-                          borderRadius: "4px",
-                          cursor: "pointer",
+                          display: "flex",
+                          gap: "10px",
                         }}
                       >
-                        {f.caption ? "Edit Caption" : "Add Caption"}
-                      </button>
-                      <button
-                        onClick={() => {
-                          const updated = [...files];
-                          updated.splice(idx, 1);
-                          setFiles(updated);
-                        }}
-                        style={{
-                          marginLeft: "10px",
-                          padding: "6px 10px",
-                          backgroundColor: "red",
-                          color: "#fff",
-                          border: "none",
-                          borderRadius: "4px",
-                          cursor: "pointer",
-                        }}
-                      >
-                        Remove
-                      </button>
+                        <button
+                          onClick={() => openCaptionDialog(idx)}
+                          style={{
+                            padding: "6px 10px",
+                            backgroundColor: "#007bff",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          {f.caption ? "Edit Caption" : "Add Caption"}
+                        </button>
+                        <button
+                          onClick={() => {
+                            const updated = [...files];
+                            updated.splice(idx, 1);
+                            setFiles(updated);
+                          }}
+                          style={{
+                            padding: "6px 10px",
+                            backgroundColor: "red",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
               )}
             </div>
-          </div>
-
-          {/* Devices */}
-          <div
-            style={{
-              backgroundColor: "#f9f9f9",
-              padding: "1.5rem",
-              border: "1px solid #ccc",
-              borderRadius: "8px",
-            }}
-          >
-            <div style={{ marginBottom: "15px" }}>
-              <strong>Available Devices:</strong>
-            </div>
-            {Object.entries(devices).filter(([_, dev]) => dev.online).length ===
-            0 ? (
-              <p
-                style={{
-                  color: "#888",
-                  textAlign: "center",
-                  paddingTop: "1rem",
-                  margin: "0",
-                }}
-              >
-                No devices available.
-              </p>
-            ) : (
-              <label>
-                <input
-                  type="checkbox"
-                  checked={
-                    selectedDevices.length ===
-                    Object.entries(devices).filter(([_, dev]) => dev.online)
-                      .length
-                  }
-                  onChange={(e) => {
-                    const selectableDevices = Object.entries(devices)
-                      .filter(
-                        ([_, dev]) =>
-                          dev.online && !dev.contactPosting && !dev.groupPosting
-                      )
-                      .map(([name]) => name);
-
-                    setSelectedDevices(
-                      (e.target as HTMLInputElement).checked
-                        ? selectableDevices
-                        : []
-                    );
-                  }}
-                />{" "}
-                <strong>Select All</strong>
-              </label>
-            )}
-            <div
-              style={{
-                marginTop: "10px",
-                maxHeight: "300px",
-                overflowY: "auto",
-              }}
-            >
-              {Object.entries(devices)
-                .filter(([_, dev]) => dev.online)
-                .map(([name, dev]) => {
-                  const isPosting = dev.contactPosting || dev.groupPosting;
-                  return (
-                    <div key={name} style={{ marginTop: "5px" }}>
-                      <label style={{ color: isPosting ? "gray" : "black" }}>
-                        <input
-                          type="checkbox"
-                          checked={selectedDevices.includes(name)}
-                          onChange={() => handleDeviceToggle(name)}
-                          disabled={isPosting}
-                        />{" "}
-                        {name} {isPosting && <span>(posting)</span>}
-                      </label>
-                    </div>
-                  );
-                })}
-            </div>
-          </div>
-
-          {/* Tags */}
-          <div
-            style={{
-              backgroundColor: "#f9f9f9",
-              padding: "1.5rem",
-              border: "1px solid #ccc",
-              borderRadius: "8px",
-            }}
-          >
-            <strong>Available Tags:</strong>
-            <div
-              style={{
-                marginTop: "15px",
-                maxHeight: "300px",
-                overflowY: "auto",
-              }}
-            >
-              {uniqueTags.length === 0 && (
-                <p style={{ color: "#888", textAlign: "center" }}>
-                  No tags available.
-                </p>
-              )}
-              {uniqueTags.map((tag) => (
-                <div key={tag} style={{ marginBottom: "5px" }}>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={selectedTags.includes(tag)}
-                      onChange={() =>
-                        setSelectedTags((prev) =>
-                          prev.includes(tag)
-                            ? prev.filter((t) => t !== tag)
-                            : [...prev, tag]
-                        )
-                      }
-                    />{" "}
-                    {tag}
-                  </label>
-                </div>
-              ))}
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -548,7 +873,8 @@ const Posting = () => {
           borderWidth: "2px",
           borderRadius: "8px",
           borderColor: "#ccc",
-          minWidth: "350px",
+          width: isMobile ? "90%" : "350px",
+          maxWidth: "100%",
         }}
       >
         <form
