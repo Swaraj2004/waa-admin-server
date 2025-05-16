@@ -1,6 +1,12 @@
 import path from "path";
 import { WebSocketServer, WebSocket as WsWebSocket } from "ws";
 import XLSX from "xlsx";
+import {
+  enqueueMessage,
+  getDeviceQueue,
+  getQueueCount,
+  saveDeviceQueue,
+} from "./msg-queue";
 
 const clients = new Map<
   string,
@@ -27,6 +33,7 @@ export function getDeviceStatuses() {
       groupTags: string[];
       contactPosting: boolean;
       groupPosting: boolean;
+      queueCount: number;
     }
   > = {};
 
@@ -39,6 +46,7 @@ export function getDeviceStatuses() {
       groupTags: client?.groupTags || [],
       contactPosting: client?.contactPosting || false,
       groupPosting: client?.groupPosting || false,
+      queueCount: getQueueCount(name),
     };
   });
 
@@ -52,16 +60,25 @@ export function sendToSelectedDevices(data: {
   files: { name: string; caption: string; base64: string };
   selectedTags: string[];
   selectedDevices: string[];
-  postingType: string;
+  postingType: "contact" | "group";
 }): number {
+  const statuses = getDeviceStatuses();
   let sent = 0;
-  const payload = JSON.stringify(data);
 
   for (const name of data.selectedDevices) {
     const client = clients.get(name);
-    if (client && client.ws.readyState === client.ws.OPEN) {
-      client.ws.send(payload);
+    const status = statuses[name];
+
+    const isOnline = status?.online;
+    const isBusy = status?.contactPosting || status?.groupPosting;
+
+    if (client && isOnline && !isBusy) {
+      client.ws.send(JSON.stringify(data));
+      client.contactPosting = data.postingType === "contact";
+      client.groupPosting = data.postingType === "group";
       sent++;
+    } else {
+      enqueueMessage(name, data);
     }
   }
 
@@ -127,3 +144,35 @@ export function setupWebSocketServer(server: any) {
     }
   }, 10000);
 }
+
+function processDeviceQueues() {
+  const statuses = getDeviceStatuses();
+
+  for (const name in statuses) {
+    const status = statuses[name];
+    const client = clients.get(name);
+    if (!client) continue;
+
+    const queue = getDeviceQueue(name);
+    if (!queue.length) continue;
+
+    const nextMsg = queue[0];
+
+    const busy = status.contactPosting || status.groupPosting;
+
+    if (!status.online || busy) continue;
+
+    client.ws.send(JSON.stringify(nextMsg));
+
+    if (nextMsg.postingType === "contact") {
+      client.contactPosting = true;
+    } else {
+      client.groupPosting = true;
+    }
+
+    queue.shift();
+    saveDeviceQueue(name, queue);
+  }
+}
+
+setInterval(processDeviceQueues, 8000);

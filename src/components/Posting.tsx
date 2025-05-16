@@ -8,6 +8,7 @@ type Device = {
   online: boolean;
   contactPosting: boolean;
   groupPosting: boolean;
+  queueCount: number;
 };
 
 type DevicesMap = Record<string, Device>;
@@ -44,7 +45,7 @@ const Posting = () => {
 
   const handleDeviceToggle = (name: string) => {
     const dev = devices[name];
-    if (!dev || dev.contactPosting || dev.groupPosting) return;
+    if (!dev) return;
 
     setSelectedDevices((prev) =>
       prev.includes(name) ? prev.filter((d) => d !== name) : [...prev, name]
@@ -63,13 +64,13 @@ const Posting = () => {
 
   const handleFileChange = (e: Event) => {
     const input = e.target as HTMLInputElement;
-    const maxSize = 30 * 1024 * 1024;
+    const maxSize = 25 * 1024 * 1024;
 
     if (input.files) {
       const newFiles = Array.from(input.files)
         .filter((f) => {
           if (f.size > maxSize) {
-            alert(`File "${f.name}" exceeds the 30MB limit and was skipped.`);
+            alert(`File "${f.name}" exceeds the 25MB limit and was skipped.`);
             return false;
           }
           return true;
@@ -114,6 +115,16 @@ const Posting = () => {
       return;
     }
 
+    if (selectedDevices.length === 0) {
+      alert("Please select at least one device.");
+      return;
+    }
+
+    if (selectedTags.length === 0) {
+      alert("Please select at least one tag.");
+      return;
+    }
+
     setLoading(true);
     try {
       const base64Files = await Promise.all(
@@ -142,8 +153,8 @@ const Posting = () => {
           message: message || "",
           sendAsContact,
           files: base64Files,
-          selectedTags: selectedTags || [],
-          selectedDevices: selectedDevices || [],
+          selectedTags: selectedTags,
+          selectedDevices: selectedDevices,
           postingType,
         }),
       });
@@ -291,12 +302,7 @@ const Posting = () => {
                       }
                       onChange={(e) => {
                         const selectableDevices = Object.entries(devices)
-                          .filter(
-                            ([_, dev]) =>
-                              dev.online &&
-                              !dev.contactPosting &&
-                              !dev.groupPosting
-                          )
+                          .filter(([_, dev]) => dev.online)
                           .map(([name]) => name);
 
                         setSelectedDevices(
@@ -320,18 +326,19 @@ const Posting = () => {
                     .filter(([_, dev]) => dev.online)
                     .map(([name, dev]) => {
                       const isPosting = dev.contactPosting || dev.groupPosting;
+                      const queueCount = dev.queueCount || 0;
                       return (
                         <div key={name} style={{ marginTop: "5px" }}>
-                          <label
-                            style={{ color: isPosting ? "gray" : "black" }}
-                          >
+                          <label>
                             <input
                               type="checkbox"
                               checked={selectedDevices.includes(name)}
                               onChange={() => handleDeviceToggle(name)}
-                              disabled={isPosting}
                             />{" "}
-                            {name} {isPosting && <span>(posting)</span>}
+                            {name} {isPosting && <span>(posting)</span>}{" "}
+                            {queueCount > 0 && (
+                              <span> ({queueCount} queued)</span>
+                            )}
                           </label>
                         </div>
                       );
@@ -587,12 +594,7 @@ const Posting = () => {
                       }
                       onChange={(e) => {
                         const selectableDevices = Object.entries(devices)
-                          .filter(
-                            ([_, dev]) =>
-                              dev.online &&
-                              !dev.contactPosting &&
-                              !dev.groupPosting
-                          )
+                          .filter(([_, dev]) => dev.online)
                           .map(([name]) => name);
 
                         setSelectedDevices(
@@ -616,18 +618,19 @@ const Posting = () => {
                     .filter(([_, dev]) => dev.online)
                     .map(([name, dev]) => {
                       const isPosting = dev.contactPosting || dev.groupPosting;
+                      const queueCount = dev.queueCount || 0;
                       return (
                         <div key={name} style={{ marginTop: "5px" }}>
-                          <label
-                            style={{ color: isPosting ? "gray" : "black" }}
-                          >
+                          <label>
                             <input
                               type="checkbox"
                               checked={selectedDevices.includes(name)}
                               onChange={() => handleDeviceToggle(name)}
-                              disabled={isPosting}
                             />{" "}
-                            {name} {isPosting && <span>(posting)</span>}
+                            {name} {isPosting && <span>(posting)</span>}{" "}
+                            {queueCount > 0 && (
+                              <span> ({queueCount} queued)</span>
+                            )}
                           </label>
                         </div>
                       );
