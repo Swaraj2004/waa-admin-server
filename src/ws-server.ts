@@ -65,7 +65,7 @@ export function sendToSelectedDevices(data: {
   const statuses = getDeviceStatuses();
   let sent = 0;
 
-  for (const name of data.selectedDevices) {
+  const tasks = data.selectedDevices.map((name) => {
     const client = clients.get(name);
     const status = statuses[name];
 
@@ -73,14 +73,26 @@ export function sendToSelectedDevices(data: {
     const isBusy = status?.contactPosting || status?.groupPosting;
 
     if (client && isOnline && !isBusy) {
-      client.ws.send(JSON.stringify(data));
-      client.contactPosting = data.postingType === "contact";
-      client.groupPosting = data.postingType === "group";
-      sent++;
+      return new Promise<void>((resolve) => {
+        try {
+          client.ws.send(JSON.stringify(data), () => {
+            client.contactPosting = data.postingType === "contact";
+            client.groupPosting = data.postingType === "group";
+            sent++;
+            resolve();
+          });
+        } catch {
+          resolve(); // fail silently
+        }
+      });
     } else {
       enqueueMessage(name, data);
+      return Promise.resolve();
     }
-  }
+  });
+
+  // Run all sends in parallel
+  Promise.allSettled(tasks);
 
   return sent;
 }
