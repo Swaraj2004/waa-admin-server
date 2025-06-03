@@ -13,7 +13,7 @@ export function getDeviceQueue(deviceName: string): {
   type: string;
   message: string;
   sendAsContact: boolean;
-  files: { name: string; caption: string; base64: string };
+  files: { name: string; caption: string; base64: string }[];
   selectedTags: string[];
   selectedDevices: string[];
   postingType: "contact" | "group";
@@ -36,7 +36,7 @@ export function saveDeviceQueue(
     type: string;
     message: string;
     sendAsContact: boolean;
-    files: { name: string; caption: string; base64: string };
+    files: { name: string; caption: string; base64: string }[];
     selectedTags: string[];
     selectedDevices: string[];
     postingType: "contact" | "group";
@@ -54,7 +54,7 @@ export function enqueueMessage(
     type: string;
     message: string;
     sendAsContact: boolean;
-    files: { name: string; caption: string; base64: string };
+    files: { name: string; caption: string; base64: string }[];
     selectedTags: string[];
     selectedDevices: string[];
     postingType: "contact" | "group";

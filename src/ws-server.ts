@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import path from "path";
 import { WebSocketServer, WebSocket as WsWebSocket } from "ws";
 import XLSX from "xlsx";
@@ -7,6 +8,8 @@ import {
   getQueueCount,
   saveDeviceQueue,
 } from "./msg-queue";
+
+const CHUNK_SIZE = 64 * 1024;
 
 const clients = new Map<
   string,
@@ -53,11 +56,56 @@ export function getDeviceStatuses() {
   return statusMap;
 }
 
+function sendFileInChunks(
+  ws: WsWebSocket,
+  fileBuffer: Buffer,
+  name: string,
+  caption: string
+) {
+  const fileId = randomUUID();
+  const totalChunks = Math.ceil(fileBuffer.length / CHUNK_SIZE);
+
+  const metadata = {
+    type: "file-metadata",
+    fileId,
+    name,
+    caption,
+    size: fileBuffer.length,
+    totalChunks,
+  };
+
+  ws.send(JSON.stringify(metadata));
+
+  for (let i = 0; i < totalChunks; i++) {
+    const start = i * CHUNK_SIZE;
+    const end = Math.min(start + CHUNK_SIZE, fileBuffer.length);
+    const chunk = fileBuffer.subarray(start, end);
+
+    const header = Buffer.from(
+      JSON.stringify({
+        type: "file-chunk",
+        fileId,
+        index: i,
+      }) + "\n"
+    );
+
+    const payload = Buffer.concat([header, chunk]);
+    ws.send(payload);
+  }
+
+  ws.send(
+    JSON.stringify({
+      type: "file-complete",
+      fileId,
+    })
+  );
+}
+
 export function sendToSelectedDevices(data: {
   type: string;
   message: string;
   sendAsContact: boolean;
-  files: { name: string; caption: string; base64: string };
+  files: { name: string; caption: string; base64: string }[];
   selectedTags: string[];
   selectedDevices: string[];
   postingType: "contact" | "group";
@@ -75,14 +123,30 @@ export function sendToSelectedDevices(data: {
     if (client && isOnline && !isBusy) {
       return new Promise<void>((resolve) => {
         try {
-          client.ws.send(JSON.stringify(data), () => {
+          const { files, ...rest } = data;
+
+          client.ws.send(JSON.stringify(rest), () => {
             client.contactPosting = data.postingType === "contact";
             client.groupPosting = data.postingType === "group";
             sent++;
+
+            if (Array.isArray(files)) {
+              for (const file of files) {
+                const buffer = Buffer.from(file.base64, "base64");
+                sendFileInChunks(client.ws, buffer, file.name, file.caption);
+              }
+            }
+
+            client.ws.send(
+              JSON.stringify({
+                type: "file-transfer-complete",
+              })
+            );
+
             resolve();
           });
         } catch {
-          resolve(); // fail silently
+          resolve();
         }
       });
     } else {
@@ -91,9 +155,7 @@ export function sendToSelectedDevices(data: {
     }
   });
 
-  // Run all sends in parallel
   Promise.allSettled(tasks);
-
   return sent;
 }
 
@@ -101,18 +163,31 @@ export function setupWebSocketServer(server: any) {
   const wss = new WebSocketServer({ server });
 
   wss.on("connection", (ws) => {
-    let registeredName: string = "";
+    let registeredName = "";
 
     heartbeats.set(ws, true);
-
-    ws.on("pong", () => {
-      heartbeats.set(ws, true);
-    });
+    ws.on("pong", () => heartbeats.set(ws, true));
 
     ws.on("message", (data) => {
       try {
-        const message = JSON.parse(data.toString());
-        if (message.type === "register" && message.name) {
+        let message: any;
+
+        // If Buffer, try to parse as string
+        if (Buffer.isBuffer(data)) {
+          const asString = data.toString("utf8");
+          try {
+            message = JSON.parse(asString);
+          } catch {
+            // Not a JSON string — ignore, likely binary file chunk
+            return;
+          }
+        } else if (typeof data === "string") {
+          message = JSON.parse(data);
+        } else {
+          return;
+        }
+
+        if (message && message.type === "register" && message.name) {
           registeredName = message.name;
           const contactTags: string[] = message.contactTags || [];
           const groupTags: string[] = message.groupTags || [];
@@ -169,12 +244,25 @@ function processDeviceQueues() {
     if (!queue.length) continue;
 
     const nextMsg = queue[0];
-
     const busy = status.contactPosting || status.groupPosting;
 
     if (!status.online || busy) continue;
 
-    client.ws.send(JSON.stringify(nextMsg));
+    const { files, ...rest } = nextMsg;
+    client.ws.send(JSON.stringify(rest));
+
+    if (Array.isArray(files)) {
+      for (const file of files) {
+        const buffer = Buffer.from(file.base64, "base64");
+        sendFileInChunks(client.ws, buffer, file.name, file.caption);
+      }
+    }
+
+    client.ws.send(
+      JSON.stringify({
+        type: "file-transfer-complete",
+      })
+    );
 
     if (nextMsg.postingType === "contact") {
       client.contactPosting = true;
