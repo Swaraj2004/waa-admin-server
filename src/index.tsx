@@ -1,6 +1,9 @@
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
+import fs from "fs";
 import { Hono } from "hono";
+import { nanoid } from "nanoid";
+import path from "path";
 import { Layout } from "./components/Layout";
 import {
   getDeviceStatuses,
@@ -45,11 +48,32 @@ app.post("/api/start-posting", async (c) => {
     postingType,
   } = body;
 
+  const uploadDir = path.join(process.cwd(), "public", "files");
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+
+  const savedFiles = files.map(
+    (file: { name: string; caption: string; base64: string }) => {
+      const buffer = Buffer.from(file.base64, "base64");
+      const uniqueName = `${nanoid(10)}-${file.name}`;
+      const filePath = path.join(uploadDir, uniqueName);
+
+      fs.writeFileSync(filePath, buffer);
+
+      return {
+        name: file.name,
+        caption: file.caption,
+        path: `/files/${uniqueName}`,
+      };
+    }
+  );
+
   const sent = sendToSelectedDevices({
     type: "file-transfer",
     message,
     sendAsContact,
-    files,
+    files: savedFiles,
     selectedTags,
     postingType,
     selectedDevices,

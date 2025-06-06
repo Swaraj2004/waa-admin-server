@@ -15,8 +15,8 @@ type DevicesMap = Record<string, Device>;
 
 const Posting = () => {
   const { isMobile, isDesktop } = useResponsive();
-  const [postingType, setPostingType] = useState<"contacts" | "groups">(
-    "contacts"
+  const [postingType, setPostingType] = useState<"contact" | "group">(
+    "contact"
   );
   const [devices, setDevices] = useState<DevicesMap>({});
   const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
@@ -55,7 +55,7 @@ const Posting = () => {
   const uniqueTags = Array.from(
     new Set(
       selectedDevices.flatMap((name) =>
-        postingType === "contacts"
+        postingType === "contact"
           ? devices[name]?.contactTags || []
           : devices[name]?.groupTags || []
       )
@@ -231,8 +231,8 @@ const Posting = () => {
               <input
                 type="radio"
                 name="type"
-                checked={postingType === "contacts"}
-                onChange={() => setPostingType("contacts")}
+                checked={postingType === "contact"}
+                onChange={() => setPostingType("contact")}
                 style={{ marginTop: "0" }}
               />
               <span>Contacts</span>
@@ -243,8 +243,8 @@ const Posting = () => {
               <input
                 type="radio"
                 name="type"
-                checked={postingType === "groups"}
-                onChange={() => setPostingType("groups")}
+                checked={postingType === "group"}
+                onChange={() => setPostingType("group")}
                 style={{ marginTop: "0" }}
               />
               <span>Groups</span>

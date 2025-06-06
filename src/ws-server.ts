@@ -57,7 +57,7 @@ export function sendToSelectedDevices(data: {
   type: string;
   message: string;
   sendAsContact: boolean;
-  files: { name: string; caption: string; base64: string };
+  files: { name: string; caption: string; path: string }[];
   selectedTags: string[];
   selectedDevices: string[];
   postingType: "contact" | "group";
