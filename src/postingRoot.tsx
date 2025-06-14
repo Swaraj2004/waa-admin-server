@@ -1,9 +1,9 @@
 import { render } from "hono/jsx/dom";
-import Posting from "./components/Posting";
+import PostingPage from "./components/PostingPage";
 
 const postingRoot = document.getElementById("posting-ui");
 if (postingRoot) {
-  render(<Posting />, postingRoot);
+  render(<PostingPage />, postingRoot);
 } else {
   console.error("Root element with id 'posting-ui' not found.");
 }
