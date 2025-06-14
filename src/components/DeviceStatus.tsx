@@ -14,6 +14,10 @@ export function DeviceStatus() {
   const [notifications, setNotifications] = useState<string[]>([]);
   const { isMobile } = useResponsive();
 
+  const onlineDevices = Object.entries(devices).filter(
+    ([_, dev]) => dev.online
+  );
+
   useEffect(() => {
     const fetchDevices = () => {
       fetch("/api/devices")
@@ -61,14 +65,26 @@ export function DeviceStatus() {
           backgroundColor: "#f9f9f9",
         }}
       >
-        <h2
+        <div
           style={{
             margin: "0 0 1rem",
             fontSize: isMobile ? "1.25rem" : "1.5rem",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
           }}
         >
-          Devices
-        </h2>
+          <h2
+            style={{
+              margin: "0",
+            }}
+          >
+            Devices
+          </h2>
+          <span>
+            ({onlineDevices.length} / {Object.keys(devices).length} Online)
+          </span>
+        </div>
         <div
           style={{
             display: "flex",

@@ -35,8 +35,13 @@ export const Layout: FC = (props) => {
               font-size: 1.4rem;
               font-weight: 600;
             }
+            .title-and-button {
+              display: flex;
+              align-items: center;
+              gap: 30px;
+            }
             /* Mobile styles */
-            @media (max-width: 767px) {
+            @media (max-width: 860px) {
               body {
                 padding: 1rem;
               }
@@ -46,6 +51,12 @@ export const Layout: FC = (props) => {
               header {
                 flex-direction: column;
               }
+              .title-and-button {
+                gap: 0;
+              }
+              .title-and-button button {
+                display: none;
+              }
             }
           `,
           }}
@@ -53,7 +64,32 @@ export const Layout: FC = (props) => {
       </head>
       <body>
         <header>
-          <h1>📋 WAA Control Panel</h1>
+          <div className="title-and-button">
+            <h1>📋 WAA Control Panel</h1>
+            <a
+              href="https://github.com/CRoadSolutions/waa-setup/releases"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                textDecoration: "none",
+              }}
+            >
+              <button
+                style={{
+                  padding: "8px 16px",
+                  backgroundColor: "#007bff",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  fontSize: "1rem",
+                  fontWeight: "600",
+                }}
+              >
+                Download Software
+              </button>
+            </a>
+          </div>
           <nav>
             <a
               href="/"
